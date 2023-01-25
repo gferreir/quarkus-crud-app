@@ -111,8 +111,39 @@ quarkus-crud-app:latest
 >> To create the network: `podman network create lab` or `docker network create lab`
 > - [Rerun the database](#running-the-postgresql-database) but now passing the network name as parameter on run of the container (`--network lab`)
 
+## Running the application on Kubernetes
+
+Also, you can deploy this application on a Kubernetes environment like Kubernetes itself or on Openshift for example.
+
+To do that, just apply the definition of the Kubernetes objects contained in this project using `kubctl` or `oc client`:
+
+```shell
+kubctl apply -f src/main/kubernetes/resources.yml
+```
+Or
+```shell
+oc apply -f src/main/kubernetes/resources.yml
+```
+
+> You can deploy the PostgreSQL database on Kubernetes environment or somewhere else. But, remember to configure the URL 
+> connection on [resource.yaml](/src/main/kubernetes/resources.yml) file:
+
+```yaml
+env:
+  - name: DB_USERNAME
+    value: hibernate
+  - name: DB_PASSWORD
+    value: hibernate
+  - name: DB_URL_CONNECTION
+    value: 'jdbc:postgresql://postgresql:5432/hibernate_db'
+```
+
 ## Related Guides
 
 - Hibernate ORM ([guide](https://quarkus.io/guides/hibernate-orm)): Define your persistent model with Hibernate ORM and
   JPA
 - RESTEasy Classic ([guide](https://quarkus.io/guides/resteasy)): REST endpoint framework implementing JAX-RS and more
+
+## To Do
+
+1. Include instruction or files to deploy a PostgreSQL instance on Kubernetes environment;
