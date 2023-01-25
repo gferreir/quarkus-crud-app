@@ -147,3 +147,4 @@ env:
 ## To Do
 
 1. Include instruction or files to deploy a PostgreSQL instance on Kubernetes environment;
+2. Develop a frontend application to consume this backend application;
