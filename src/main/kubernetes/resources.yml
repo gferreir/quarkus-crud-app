@@ -1,0 +1,153 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: quarkus-crud-app
+  annotations:
+    image.openshift.io/triggers: |-
+      [
+        {
+          "from": {
+            "kind": "ImageStreamTag",
+            "name": "quarkus-crud-app:latest"
+          },
+          "fieldPath": "spec.template.spec.containers[0].image"
+        }
+      ]
+  labels:
+    app: quarkus-crud-app
+    app.kubernetes.io/component: quarkus-crud-app
+    app.kubernetes.io/instance: quarkus-crud-app
+    app.kubernetes.io/name: quarkus-crud-app
+    app.kubernetes.io/part-of: quarkus-crud-app
+    app.openshift.io/runtime: java
+    app.openshift.io/runtime-version: openjdk-17-ubi8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quarkus-crud-app
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: quarkus-crud-app
+        deployment: quarkus-crud-app
+    spec:
+      containers:
+        - name: quarkus-crud-app
+          image: quarkus-crud-app:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+          env:
+            - name: DB_USERNAME
+              value: hibernate
+            - name: DB_PASSWORD
+              value: hibernate
+            - name: DB_URL_CONNECTION
+              value: 'jdbc:postgresql://postgresql:5432/hibernate_db'
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+---
+kind: BuildConfig
+apiVersion: build.openshift.io/v1
+metadata:
+  name: quarkus-crud-app
+  labels:
+    app: quarkus-crud-app
+    app.kubernetes.io/component: quarkus-crud-app
+    app.kubernetes.io/instance: quarkus-crud-app
+    app.kubernetes.io/name: quarkus-crud-app
+    app.kubernetes.io/part-of: quarkus-crud-app
+    app.openshift.io/runtime: java
+    app.openshift.io/runtime-version: openjdk-17-ubi8
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'quarkus-crud-app:latest'
+  resources: {}
+  successfulBuildsHistoryLimit: 5
+  failedBuildsHistoryLimit: 5
+  strategy:
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        namespace: openshift
+        name: 'java:openjdk-17-ubi8'
+  postCommit: {}
+  source:
+    type: Git
+    git:
+      uri: 'https://github.com/gferreir/quarkus-crud-app.git'
+    contextDir: /
+  triggers:
+    - type: Generic
+      generic:
+        secretReference:
+          name: quarkus-crud-app-generic-webhook-secret
+    - type: GitHub
+      github:
+        secretReference:
+          name: quarkus-crud-app-github-webhook-secret
+    - type: ImageChange
+      imageChange: {}
+    - type: ConfigChange
+  runPolicy: Serial
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: quarkus-crud-app
+  labels:
+    app: quarkus-crud-app
+spec:
+  lookupPolicy:
+    local: true
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: quarkus-crud-app
+  labels:
+    app: quarkus-crud-app
+spec:
+  ports:
+    - name: tcp-8080
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: quarkus-crud-app
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: quarkus-crud-app
+  labels:
+    app: quarkus-crud-app
+spec:
+  to:
+    kind: Service
+    name: quarkus-crud-app
+  tls: null
+  port:
+    targetPort: tcp-8080
